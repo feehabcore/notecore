@@ -7,6 +7,7 @@ import {
   registerBiometricCredential,
   verifyBiometricCredential,
 } from '../utils/biometric';
+import { isPhonePlatform } from '../utils/phonePlatform';
 import ProcessingSpinner from './ProcessingSpinner';
 import { requestAppNotificationPermission } from '../notifications';
 import AppToast, { useToastMessage } from './AppToast';
@@ -20,6 +21,7 @@ export default function Settings() {
     null | 'save-days' | 'biometric' | 'notify' | 'export-selected' | 'export-all' | 'reset'
   >(null);
   const { toast, showToast } = useToastMessage();
+  const isPhone = isPhonePlatform();
 
   React.useEffect(() => {
     setDays(String(data.settings.passwordRotationDays));
@@ -132,6 +134,12 @@ export default function Settings() {
       setProcessing(null);
       return;
     }
+    if (!isPhone) {
+      alert('Biometric lock is only available on phone (fingerprint / face).');
+      updateSettings({ requireBiometricOnOpen: false });
+      setProcessing(null);
+      return;
+    }
     if (!isBiometricAvailable()) {
       alert('Biometric/Passkey is not supported on this device/browser.');
       setProcessing(null);
@@ -224,34 +232,36 @@ export default function Settings() {
           </div>
         </div>
 
-        <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-6 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary">
-            <Fingerprint size={22} />
-          </div>
-          <div className="flex-1">
-            <div className="font-headline font-bold text-primary text-lg">Biometric lock (fingerprint / face)</div>
-            <div className="text-secondary text-sm mt-1">
-              Enable passkey/biometric check every time the app opens. Uses your device security (fingerprint, face, or screen lock).
+        {isPhone && (
+          <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-6 flex items-start gap-4">
+            <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary">
+              <Fingerprint size={22} />
             </div>
+            <div className="flex-1">
+              <div className="font-headline font-bold text-primary text-lg">Biometric lock (fingerprint / face)</div>
+              <div className="text-secondary text-sm mt-1">
+                Enable a biometric check every time the app opens. Uses your phone security (fingerprint, face, or screen lock).
+              </div>
+            </div>
+            <button
+              onClick={() => void toggleBiometricOnOpen()}
+              disabled={processing === 'biometric'}
+              className={`px-4 py-2 rounded-xl font-bold border transition-colors ${
+                data.settings.requireBiometricOnOpen
+                  ? 'bg-tertiary-container text-tertiary-fixed border-transparent'
+                  : 'bg-surface-container text-primary border-outline-variant/20'
+              }`}
+            >
+              {processing === 'biometric' ? (
+                <ProcessingSpinner size={16} color={data.settings.requireBiometricOnOpen ? '#89f5e7' : '#182442'} />
+              ) : data.settings.requireBiometricOnOpen ? (
+                'On'
+              ) : (
+                'Off'
+              )}
+            </button>
           </div>
-          <button
-            onClick={() => void toggleBiometricOnOpen()}
-            disabled={processing === 'biometric'}
-            className={`px-4 py-2 rounded-xl font-bold border transition-colors ${
-              data.settings.requireBiometricOnOpen
-                ? 'bg-tertiary-container text-tertiary-fixed border-transparent'
-                : 'bg-surface-container text-primary border-outline-variant/20'
-            }`}
-          >
-            {processing === 'biometric' ? (
-              <ProcessingSpinner size={16} color={data.settings.requireBiometricOnOpen ? '#89f5e7' : '#182442'} />
-            ) : data.settings.requireBiometricOnOpen ? (
-              'On'
-            ) : (
-              'Off'
-            )}
-          </button>
-        </div>
+        )}
 
         <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-6 flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-primary">

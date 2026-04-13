@@ -32,16 +32,38 @@ export async function exportBlob(name: string, blob: Blob) {
   }
 
   const data = await blobToBase64(blob);
-  const { uri } = await Filesystem.writeFile({
-    path: fileName,
-    data,
-    directory: Directory.Cache,
-  });
-  await Share.share({
-    title: 'Export file',
-    text: fileName,
-    url: uri,
-  });
+  // Prefer saving to device-visible storage (Documents) so users can find exports
+  // in file manager / Downloads-type locations. If it fails (permissions/device),
+  // fallback to Cache + share sheet.
+  try {
+    try {
+      await Filesystem.requestPermissions();
+    } catch {
+      // ignore; not all platforms require explicit request
+    }
+    const { uri } = await Filesystem.writeFile({
+      path: fileName,
+      data,
+      directory: Directory.Documents,
+    });
+    await Share.share({
+      title: 'Export file',
+      text: fileName,
+      url: uri,
+    });
+    return;
+  } catch {
+    const { uri } = await Filesystem.writeFile({
+      path: fileName,
+      data,
+      directory: Directory.Cache,
+    });
+    await Share.share({
+      title: 'Export file',
+      text: fileName,
+      url: uri,
+    });
+  }
 }
 
 export async function exportDataUrl(name: string, dataUrl: string) {

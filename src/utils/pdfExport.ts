@@ -138,6 +138,7 @@ export async function downloadCredentialsPdf(credentials: Credential[]) {
       y = writeLabelValue(doc, y, 'Card Info Enabled', cred.cardEnabled ? 'Yes' : 'No');
       if (cred.cardEnabled) {
         y = writeLabelValue(doc, y, 'Card Name', cred.cardName ?? '-');
+        y = writeLabelValue(doc, y, 'Card Number', (cred as any).cardNumber ?? '-');
         y = writeLabelValue(doc, y, 'Name on Card', cred.cardHolderName ?? '-');
         y = writeLabelValue(doc, y, 'Card Type', cred.cardType ?? '-');
         y = writeLabelValue(doc, y, 'Expiry Date', cred.cardExpiryDate ?? '-');

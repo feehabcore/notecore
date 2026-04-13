@@ -14,22 +14,31 @@ import { noteLooksLikeCredential } from './utils/sensitive';
 import { daysBetween, nowIso } from './utils/time';
 import { verifyBiometricCredential } from './utils/biometric';
 import ProcessingSpinner from './components/ProcessingSpinner';
+import { isPhonePlatform } from './utils/phonePlatform';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('dashboard');
   const [editorNoteId, setEditorNoteId] = useState<string | null>(null);
-  const { addNote, getDuePasswordRotations, data } = useAppStore();
-  const [isUnlocked, setIsUnlocked] = useState(!data.settings.requireBiometricOnOpen);
+  const { addNote, getDuePasswordRotations, data, updateSettings } = useAppStore();
+  const biometricPhoneOnly = isPhonePlatform();
+  const biometricRequired = data.settings.requireBiometricOnOpen && biometricPhoneOnly;
+  const [isUnlocked, setIsUnlocked] = useState(!biometricRequired);
   const [showFeedbackPrompt, setShowFeedbackPrompt] = useState(false);
   const [isVerifyingUnlock, setIsVerifyingUnlock] = useState(false);
 
   React.useEffect(() => {
-    if (!data.settings.requireBiometricOnOpen) {
+    // If a user enabled biometrics on desktop previously, don't lock them out.
+    if (data.settings.requireBiometricOnOpen && !biometricPhoneOnly) {
+      updateSettings({ requireBiometricOnOpen: false });
+      setIsUnlocked(true);
+      return;
+    }
+    if (!biometricRequired) {
       setIsUnlocked(true);
       return;
     }
     setIsUnlocked(false);
-  }, [data.settings.requireBiometricOnOpen]);
+  }, [biometricRequired, biometricPhoneOnly, data.settings.requireBiometricOnOpen, updateSettings]);
 
   React.useEffect(() => {
     const total = data.notes.length + data.credentials.length;
@@ -90,7 +99,7 @@ export default function App() {
     }
   };
 
-  if (!isUnlocked && data.settings.requireBiometricOnOpen) {
+  if (!isUnlocked && biometricRequired) {
     return (
       <div className="min-h-screen bg-surface flex items-center justify-center p-6">
         <div className="w-full max-w-md rounded-2xl bg-surface-container-lowest border border-outline-variant/15 p-8 text-center">

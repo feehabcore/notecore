@@ -56,6 +56,7 @@ export interface Credential {
   bankUserId?: string;
   cardEnabled?: boolean;
   cardName?: string;
+  cardNumber?: string;
   cardCvv?: string;
   cardExpiryDate?: string;
   cardHolderName?: string;

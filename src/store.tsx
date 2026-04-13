@@ -24,6 +24,7 @@ type AppStore = {
     bankUserId?: string;
     cardEnabled?: boolean;
     cardName?: string;
+    cardNumber?: string;
     cardCvv?: string;
     cardExpiryDate?: string;
     cardHolderName?: string;
@@ -56,6 +57,7 @@ type AppStore = {
         | 'bankUserId'
         | 'cardEnabled'
         | 'cardName'
+        | 'cardNumber'
         | 'cardCvv'
         | 'cardExpiryDate'
         | 'cardHolderName'
@@ -148,6 +150,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       bankUserId: input.bankUserId?.trim() || undefined,
       cardEnabled: Boolean(input.cardEnabled),
       cardName: input.cardName?.trim() || undefined,
+      cardNumber: input.cardNumber?.trim() || undefined,
       cardCvv: input.cardCvv?.trim() || undefined,
       cardExpiryDate: input.cardExpiryDate?.trim() || undefined,
       cardHolderName: input.cardHolderName?.trim() || undefined,
@@ -193,6 +196,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             ...(patch.bankUserId !== undefined ? { bankUserId: patch.bankUserId?.trim() || undefined } : {}),
             ...(patch.cardEnabled !== undefined ? { cardEnabled: patch.cardEnabled } : {}),
             ...(patch.cardName !== undefined ? { cardName: patch.cardName?.trim() || undefined } : {}),
+            ...(patch.cardNumber !== undefined ? { cardNumber: patch.cardNumber?.trim() || undefined } : {}),
             ...(patch.cardCvv !== undefined ? { cardCvv: patch.cardCvv?.trim() || undefined } : {}),
             ...(patch.cardExpiryDate !== undefined
               ? { cardExpiryDate: patch.cardExpiryDate?.trim() || undefined }

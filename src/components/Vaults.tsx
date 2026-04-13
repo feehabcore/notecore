@@ -15,6 +15,7 @@ export default function Vaults() {
   const [processingId, setProcessingId] = React.useState<string | null>(null);
   const [processingAction, setProcessingAction] = React.useState<'rotate' | 'delete' | 'front' | 'back' | null>(null);
   const [visiblePasswords, setVisiblePasswords] = React.useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
   const { toast, showToast } = useToastMessage();
 
@@ -67,6 +68,10 @@ export default function Vaults() {
     setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  const toggleExpanded = (id: string) => {
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   const copyText = async (key: string, value?: string) => {
     if (!value) return;
     try {
@@ -77,6 +82,8 @@ export default function Vaults() {
       // no-op
     }
   };
+
+  const isLong = (value?: string, min = 140) => Boolean(value && value.trim().length >= min);
 
   return (
     <div className="px-6 py-8 max-w-4xl mx-auto pb-32">
@@ -206,6 +213,21 @@ export default function Vaults() {
           <div className="grid grid-cols-1 gap-3">
             {creds.map((c) => {
               const isDue = daysBetween(c.passwordUpdatedAt, now) >= rotationDays;
+              const isExpanded = Boolean(expanded[c.id]);
+              const showDetailsToggle =
+                c.category === 'Banking' ||
+                Boolean(c.notes) ||
+                Boolean(c.cardEnabled) ||
+                Boolean(c.cardName) ||
+                Boolean(c.cardHolderName) ||
+                Boolean(c.cardExpiryDate) ||
+                Boolean(c.cardCvv) ||
+                Boolean(c.bankAppName) ||
+                Boolean(c.govIdNumber) ||
+                Boolean(c.googleBackupCodes) ||
+                Boolean(c.username) ||
+                Boolean(c.website) ||
+                isLong(c.notes, 90);
               return (
                 <motion.div
                   key={c.id}
@@ -237,6 +259,19 @@ export default function Vaults() {
                       {c.username && <span>user: {c.username}</span>}
                       {c.website && <span className="truncate">site: {c.website}</span>}
                     </div>
+                    {c.bankAccountNumber && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <span className="text-sm text-primary font-semibold truncate">bank account: {c.bankAccountNumber}</span>
+                        <button
+                          type="button"
+                          onClick={() => void copyText(`${c.id}-bankAccount`, c.bankAccountNumber)}
+                          className="px-2 py-1 rounded-lg bg-surface-container text-primary text-xs font-bold flex items-center gap-1"
+                        >
+                          {copiedKey === `${c.id}-bankAccount` ? <Check size={14} /> : <Copy size={14} />}
+                          {copiedKey === `${c.id}-bankAccount` ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                    )}
                     {c.email && (
                       <div className="mt-2 flex items-center gap-2">
                         <span className="text-sm text-primary font-semibold truncate">email: {c.email}</span>
@@ -275,6 +310,105 @@ export default function Vaults() {
                         </button>
                       )}
                     </div>
+
+                    {c.notes && (
+                      <div className="mt-3">
+                        <div className="text-[11px] uppercase tracking-widest font-bold text-outline mb-1">encryption notes</div>
+                        <div className="text-sm text-primary whitespace-pre-wrap break-words">
+                          {isExpanded || !isLong(c.notes) ? c.notes : `${c.notes.slice(0, 140)}…`}
+                        </div>
+                      </div>
+                    )}
+
+                    {showDetailsToggle && (
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(c.id)}
+                          className="px-3 py-2 rounded-xl bg-surface-container text-primary text-xs font-bold inline-flex items-center gap-2"
+                        >
+                          {isExpanded ? 'Hide details' : 'Show more'}
+                        </button>
+                      </div>
+                    )}
+
+                    {isExpanded && c.category === 'Banking' && (
+                      <div className="mt-4 rounded-2xl border border-outline-variant/10 bg-surface-container-lowest p-4 space-y-3">
+                        <div className="text-[11px] uppercase tracking-widest font-bold text-outline">bank details</div>
+                        {c.bankAppName && <div className="text-sm text-primary"><span className="font-bold">app:</span> {c.bankAppName}</div>}
+
+                        {(c.cardEnabled || c.cardName || c.cardNumber || c.cardType || c.cardHolderName || c.cardExpiryDate || c.cardCvv) && (
+                          <div className="pt-2 space-y-2">
+                            <div className="text-[11px] uppercase tracking-widest font-bold text-outline">card info</div>
+                            {c.cardName && <div className="text-sm text-primary"><span className="font-bold">card name:</span> {c.cardName}</div>}
+                            {c.cardType && <div className="text-sm text-primary"><span className="font-bold">type:</span> {c.cardType}</div>}
+                            {c.cardHolderName && (
+                              <div className="text-sm text-primary"><span className="font-bold">holder:</span> {c.cardHolderName}</div>
+                            )}
+                            {c.cardNumber && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-primary font-semibold">
+                                  card number: {visiblePasswords[`${c.id}-cardNumber`] ? c.cardNumber : '•••• •••• •••• ••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => togglePasswordVisibility(`${c.id}-cardNumber`)}
+                                  className="px-2 py-1 rounded-lg bg-surface-container text-primary text-xs font-bold flex items-center gap-1"
+                                >
+                                  {visiblePasswords[`${c.id}-cardNumber`] ? <EyeOff size={14} /> : <Eye size={14} />}
+                                  {visiblePasswords[`${c.id}-cardNumber`] ? 'Hide' : 'Show'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void copyText(`${c.id}-cardNumber-copy`, c.cardNumber)}
+                                  className="px-2 py-1 rounded-lg bg-surface-container text-primary text-xs font-bold flex items-center gap-1"
+                                >
+                                  {copiedKey === `${c.id}-cardNumber-copy` ? <Check size={14} /> : <Copy size={14} />}
+                                  {copiedKey === `${c.id}-cardNumber-copy` ? 'Copied' : 'Copy'}
+                                </button>
+                              </div>
+                            )}
+                            {c.cardExpiryDate && (
+                              <div className="mt-1 flex items-center gap-2">
+                                <span className="text-sm text-primary font-semibold">expiry: {c.cardExpiryDate}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => void copyText(`${c.id}-expiry-copy`, c.cardExpiryDate)}
+                                  className="px-2 py-1 rounded-lg bg-surface-container text-primary text-xs font-bold flex items-center gap-1"
+                                >
+                                  {copiedKey === `${c.id}-expiry-copy` ? <Check size={14} /> : <Copy size={14} />}
+                                  {copiedKey === `${c.id}-expiry-copy` ? 'Copied' : 'Copy'}
+                                </button>
+                              </div>
+                            )}
+                            {c.cardCvv && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-primary font-semibold">
+                                  cvv: {visiblePasswords[`${c.id}-cvv`] ? c.cardCvv : '•••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => togglePasswordVisibility(`${c.id}-cvv`)}
+                                  className="px-2 py-1 rounded-lg bg-surface-container text-primary text-xs font-bold flex items-center gap-1"
+                                >
+                                  {visiblePasswords[`${c.id}-cvv`] ? <EyeOff size={14} /> : <Eye size={14} />}
+                                  {visiblePasswords[`${c.id}-cvv`] ? 'Hide' : 'Show'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void copyText(`${c.id}-cvv-copy`, c.cardCvv)}
+                                  className="px-2 py-1 rounded-lg bg-surface-container text-primary text-xs font-bold flex items-center gap-1"
+                                >
+                                  {copiedKey === `${c.id}-cvv-copy` ? <Check size={14} /> : <Copy size={14} />}
+                                  {copiedKey === `${c.id}-cvv-copy` ? 'Copied' : 'Copy'}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="text-[11px] uppercase tracking-widest font-bold text-outline mt-3">
                       last password change: {formatRelativeTime(c.passwordUpdatedAt, now)}
                     </div>

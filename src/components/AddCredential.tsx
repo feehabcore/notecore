@@ -25,6 +25,7 @@ export default function AddCredential({ onBack }: AddCredentialProps) {
   const [bankUserId, setBankUserId] = React.useState('');
   const [hasCardInfo, setHasCardInfo] = React.useState(false);
   const [cardName, setCardName] = React.useState('');
+  const [cardNumber, setCardNumber] = React.useState('');
   const [cardCvv, setCardCvv] = React.useState('');
   const [cardExpiryDate, setCardExpiryDate] = React.useState('');
   const [cardHolderName, setCardHolderName] = React.useState('');
@@ -60,6 +61,20 @@ export default function AddCredential({ onBack }: AddCredentialProps) {
       reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsDataURL(file);
     });
+
+  const formatExpiryDate = (raw: string) => {
+    // Keep only digits, limit to 4 (MMYY), then format as MM/YY
+    const digits = raw.replace(/\D/g, '').slice(0, 4);
+    if (digits.length <= 2) return digits;
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  };
+
+  const formatCardNumber = (raw: string) => {
+    // Keep only digits, limit to 16, then group as "1111 2222 3333 4444"
+    const digits = raw.replace(/\D/g, '').slice(0, 16);
+    const parts = digits.match(/.{1,4}/g) ?? [];
+    return parts.join(' ');
+  };
 
   const onGovImage = async (which: 'front' | 'back', fileList: FileList | null) => {
     const file = fileList?.[0];
@@ -116,6 +131,7 @@ export default function AddCredential({ onBack }: AddCredentialProps) {
       bankUserId: isBanking ? bankUserId.trim() || undefined : undefined,
       cardEnabled: isBanking ? hasCardInfo : false,
       cardName: isBanking && hasCardInfo ? cardName.trim() || undefined : undefined,
+      cardNumber: isBanking && hasCardInfo ? cardNumber.trim() || undefined : undefined,
       cardCvv: isBanking && hasCardInfo ? cardCvv.trim() || undefined : undefined,
       cardExpiryDate: isBanking && hasCardInfo ? cardExpiryDate.trim() || undefined : undefined,
       cardHolderName: isBanking && hasCardInfo ? cardHolderName.trim() || undefined : undefined,
@@ -515,6 +531,19 @@ export default function AddCredential({ onBack }: AddCredentialProps) {
                         />
                       </div>
                       <div className="space-y-2">
+                        <label className="font-sans text-[11px] font-bold uppercase tracking-wider text-primary ml-1">Card Number</label>
+                        <input
+                          className="w-full px-4 py-3 rounded-xl bg-surface-container-low border-none focus:ring-1 focus:ring-primary/20 transition-all"
+                          placeholder="1111 2222 3333 4444"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="cc-number"
+                          value={cardNumber}
+                          onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
+                          maxLength={19}
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <label className="font-sans text-[11px] font-bold uppercase tracking-wider text-primary ml-1">Card Type</label>
                         <div className="relative">
                           <select
@@ -547,7 +576,10 @@ export default function AddCredential({ onBack }: AddCredentialProps) {
                           placeholder="MM/YY"
                           type="text"
                           value={cardExpiryDate}
-                          onChange={(e) => setCardExpiryDate(e.target.value)}
+                          inputMode="numeric"
+                          autoComplete="cc-exp"
+                          onChange={(e) => setCardExpiryDate(formatExpiryDate(e.target.value))}
+                          maxLength={5}
                         />
                       </div>
                       <div className="space-y-2 md:col-span-2">
