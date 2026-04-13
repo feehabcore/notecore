@@ -5,8 +5,11 @@ on:
     inputs:
       tag:
         description: "Release tag (example: v1.0.0)"
-        required: true
-        default: "v1.0.0"
+        required: false
+        default: ""
+  push:
+    tags:
+      - "v*"
 
 permissions:
   contents: write
@@ -48,27 +51,36 @@ jobs:
         working-directory: android
         run: ./gradlew --no-daemon assembleDebug
 
+      - name: Resolve release tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "TAG_NAME=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+          else
+            echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          fi
+        shell: bash
+
       - name: Rename APK
         run: |
-          cp android/app/build/outputs/apk/debug/app-debug.apk "notecore-${{ github.event.inputs.tag }}-debug.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "notecore-${TAG_NAME}-debug.apk"
           cp android/app/build/outputs/apk/debug/app-debug.apk "notecore-latest-debug.apk"
         shell: bash
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag }}
-          name: Notecore ${{ github.event.inputs.tag }}
+          tag_name: ${{ env.TAG_NAME }}
+          name: Notecore ${{ env.TAG_NAME }}
           body: |
             Android APK build for Notecore.
 
             Install steps:
-            1. Download `notecore-${{ github.event.inputs.tag }}-debug.apk`
+            1. Download `notecore-${{ env.TAG_NAME }}-debug.apk`
             2. Or use stable asset name: `notecore-latest-debug.apk`
             2. Open on Android
             3. Allow "Install unknown apps" if prompted
           files: |
-            notecore-${{ github.event.inputs.tag }}-debug.apk
+            notecore-${{ env.TAG_NAME }}-debug.apk
             notecore-latest-debug.apk
           fail_on_unmatched_files: true
           make_latest: true
@@ -78,9 +90,9 @@ jobs:
       - name: Upload renamed APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: notecore-${{ github.event.inputs.tag }}-debug-apk
+          name: notecore-${{ env.TAG_NAME }}-debug-apk
           path: |
-            notecore-${{ github.event.inputs.tag }}-debug.apk
+            notecore-${{ env.TAG_NAME }}-debug.apk
             notecore-latest-debug.apk
           if-no-files-found: error
 
