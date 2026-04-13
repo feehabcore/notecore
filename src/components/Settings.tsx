@@ -8,6 +8,8 @@ import {
   verifyBiometricCredential,
 } from '../utils/biometric';
 import ProcessingSpinner from './ProcessingSpinner';
+import { requestAppNotificationPermission } from '../notifications';
+import AppToast, { useToastMessage } from './AppToast';
 
 export default function Settings() {
   const { data, updateSettings, resetAllData } = useAppStore();
@@ -17,6 +19,7 @@ export default function Settings() {
   const [processing, setProcessing] = React.useState<
     null | 'save-days' | 'biometric' | 'notify' | 'export-selected' | 'export-all' | 'reset'
   >(null);
+  const { toast, showToast } = useToastMessage();
 
   React.useEffect(() => {
     setDays(String(data.settings.passwordRotationDays));
@@ -39,24 +42,17 @@ export default function Settings() {
     setProcessing('notify');
     const next = !data.settings.notifyWithBrowserNotifications;
     if (next) {
-      if (typeof Notification === 'undefined') {
-        updateSettings({ notifyWithBrowserNotifications: false });
-        setProcessing(null);
-        return;
-      }
-      if (Notification.permission !== 'granted') {
-        try {
-          const perm = await Notification.requestPermission();
-          if (perm !== 'granted') {
-            updateSettings({ notifyWithBrowserNotifications: false });
-            setProcessing(null);
-            return;
-          }
-        } catch {
+      try {
+        const ok = await requestAppNotificationPermission();
+        if (!ok) {
           updateSettings({ notifyWithBrowserNotifications: false });
           setProcessing(null);
           return;
         }
+      } catch {
+        updateSettings({ notifyWithBrowserNotifications: false });
+        setProcessing(null);
+        return;
       }
     }
     updateSettings({ notifyWithBrowserNotifications: next });
@@ -80,38 +76,52 @@ export default function Settings() {
     setSelectedIds([]);
   };
 
-  const exportSelected = () => {
+  const exportSelected = async () => {
     if (!exportType || selectedIds.length === 0) return;
     setProcessing('export-selected');
-    if (exportType === 'notes') {
-      const notes = data.notes.filter((n) => selectedIds.includes(n.id));
-      downloadNotesPdf(notes);
-      window.setTimeout(() => setProcessing(null), 250);
-      return;
-    }
-    const creds = data.credentials.filter((c) => selectedIds.includes(c.id));
-    downloadCredentialsPdf(creds);
-    window.setTimeout(() => setProcessing(null), 250);
-  };
-
-  const exportAll = () => {
-    if (!exportType) return;
-    setProcessing('export-all');
-    if (exportType === 'notes') {
-      if (data.notes.length === 0) {
+    try {
+      if (exportType === 'notes') {
+        const notes = data.notes.filter((n) => selectedIds.includes(n.id));
+        await downloadNotesPdf(notes);
+        showToast('PDF exported. Choose where to save from share sheet.', 'success');
         setProcessing(null);
         return;
       }
-      downloadNotesPdf(data.notes);
-      window.setTimeout(() => setProcessing(null), 250);
-      return;
-    }
-    if (data.credentials.length === 0) {
+      const creds = data.credentials.filter((c) => selectedIds.includes(c.id));
+      await downloadCredentialsPdf(creds);
+      showToast('PDF exported. Choose where to save from share sheet.', 'success');
+    } catch {
+      showToast('Export failed. Please try again.', 'error');
+    } finally {
       setProcessing(null);
-      return;
     }
-    downloadCredentialsPdf(data.credentials);
-    window.setTimeout(() => setProcessing(null), 250);
+  };
+
+  const exportAll = async () => {
+    if (!exportType) return;
+    setProcessing('export-all');
+    try {
+      if (exportType === 'notes') {
+        if (data.notes.length === 0) {
+          setProcessing(null);
+          return;
+        }
+        await downloadNotesPdf(data.notes);
+        showToast('PDF exported. Choose where to save from share sheet.', 'success');
+        setProcessing(null);
+        return;
+      }
+      if (data.credentials.length === 0) {
+        setProcessing(null);
+        return;
+      }
+      await downloadCredentialsPdf(data.credentials);
+      showToast('PDF exported. Choose where to save from share sheet.', 'success');
+    } catch {
+      showToast('Export failed. Please try again.', 'error');
+    } finally {
+      setProcessing(null);
+    }
   };
 
   const toggleBiometricOnOpen = async () => {
@@ -174,6 +184,7 @@ export default function Settings() {
 
   return (
     <div className="px-6 pt-6 pb-32 max-w-4xl mx-auto">
+      {toast && <AppToast message={toast.message} tone={toast.tone} />}
       <span className="font-sans text-[11px] uppercase tracking-widest text-secondary font-bold mb-2 block">
         Privacy controls
       </span>
@@ -247,9 +258,9 @@ export default function Settings() {
             <Bell size={22} />
           </div>
           <div className="flex-1">
-            <div className="font-headline font-bold text-primary text-lg">Browser notifications</div>
+            <div className="font-headline font-bold text-primary text-lg">App notifications</div>
             <div className="text-secondary text-sm mt-1">
-              Optional. When enabled and allowed, Notecore can pop a browser notification when a saved credential is due
+              Optional. When enabled and allowed, Notecore can send app notifications when a saved credential is due
               for rotation.
             </div>
           </div>
@@ -365,14 +376,14 @@ export default function Settings() {
 
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
-                  onClick={exportSelected}
+                  onClick={() => void exportSelected()}
                   disabled={selectedIds.length === 0 || processing === 'export-selected'}
                   className="px-4 py-2 rounded-xl bg-primary text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {processing === 'export-selected' ? <ProcessingSpinner size={16} color="#ffffff" /> : 'Download selected PDF'}
                 </button>
                 <button
-                  onClick={exportAll}
+                  onClick={() => void exportAll()}
                   disabled={exportItems.length === 0 || processing === 'export-all'}
                   className="px-4 py-2 rounded-xl bg-surface-container-high text-primary font-bold disabled:opacity-50 disabled:cursor-not-allowed"
                 >

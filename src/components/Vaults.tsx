@@ -5,6 +5,8 @@ import { useAppStore } from '../store';
 import { formatRelativeTime, nowIso, daysBetween } from '../utils/time';
 import type { VaultCategory } from '../types';
 import ProcessingSpinner from './ProcessingSpinner';
+import { exportDataUrl } from '../utils/exportFile';
+import AppToast, { useToastMessage } from './AppToast';
 
 export default function Vaults() {
   const { data, deleteCredential, markCredentialPasswordChanged } = useAppStore();
@@ -14,6 +16,7 @@ export default function Vaults() {
   const [processingAction, setProcessingAction] = React.useState<'rotate' | 'delete' | 'front' | 'back' | null>(null);
   const [visiblePasswords, setVisiblePasswords] = React.useState<Record<string, boolean>>({});
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+  const { toast, showToast } = useToastMessage();
 
   const categories: VaultCategory[] = React.useMemo(
     () => ['Social Media', 'Google Account', 'Websites', 'Apps', 'Banking', 'Government IDs', 'Work / Professional', 'Entertainment', 'Utility', 'Other'],
@@ -29,22 +32,27 @@ export default function Vaults() {
   const rotationDays = Math.max(1, Math.floor(data.settings.passwordRotationDays));
   const dueCount = data.credentials.filter((c) => daysBetween(c.passwordUpdatedAt, now) >= rotationDays).length;
 
-  const downloadImage = (dataUrl: string, fileName: string) => {
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const downloadImage = async (dataUrl: string, fileName: string) => {
+    await exportDataUrl(fileName, dataUrl);
   };
 
-  const withProcessing = async (id: string, action: 'rotate' | 'delete' | 'front' | 'back', fn: () => void) => {
+  const withProcessing = async (id: string, action: 'rotate' | 'delete' | 'front' | 'back', fn: () => void | Promise<void>) => {
     setProcessingId(id);
     setProcessingAction(action);
     await new Promise((resolve) => setTimeout(resolve, 250));
-    fn();
-    setProcessingId(null);
-    setProcessingAction(null);
+    try {
+      await fn();
+      if (action === 'front' || action === 'back') {
+        showToast('Image exported. Choose where to save from share sheet.', 'success');
+      }
+    } catch {
+      if (action === 'front' || action === 'back') {
+        showToast('Image export failed. Please try again.', 'error');
+      }
+    } finally {
+      setProcessingId(null);
+      setProcessingAction(null);
+    }
   };
 
   const pickCategory = (next: VaultCategory) => {
@@ -72,6 +80,7 @@ export default function Vaults() {
 
   return (
     <div className="px-6 py-8 max-w-4xl mx-auto pb-32">
+      {toast && <AppToast message={toast.message} tone={toast.tone} />}
       {/* Editorial Header Section */}
       <section className="mb-10">
         <span className="font-sans text-[0.6875rem] uppercase tracking-[0.2em] text-secondary font-bold mb-2 block">Secure Storage</span>

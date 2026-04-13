@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { Credential, Note } from '../types';
+import { exportBlob } from './exportFile';
 
 const PAGE_MARGIN = 16;
 const LINE_HEIGHT = 5.4;
@@ -86,7 +87,7 @@ function writeDivider(doc: jsPDF, y: number) {
   return y + 5;
 }
 
-export function downloadNotesPdf(notes: Note[]) {
+export async function downloadNotesPdf(notes: Note[]) {
   const doc = new jsPDF();
   const title = 'Notes Export';
   const subtitle = `${notes.length} note${notes.length === 1 ? '' : 's'} selected`;
@@ -106,10 +107,11 @@ export function downloadNotesPdf(notes: Note[]) {
   });
 
   drawFooter(doc);
-  doc.save(`notecore-notes-${new Date().toISOString().slice(0, 10)}.pdf`);
+  const blob = doc.output('blob');
+  await exportBlob(`notecore-notes-${new Date().toISOString().slice(0, 10)}.pdf`, blob);
 }
 
-export function downloadCredentialsPdf(credentials: Credential[]) {
+export async function downloadCredentialsPdf(credentials: Credential[]) {
   const doc = new jsPDF();
   const title = 'Credentials Export';
   const subtitle = `${credentials.length} credential${credentials.length === 1 ? '' : 's'} selected`;
@@ -164,6 +166,7 @@ export function downloadCredentialsPdf(credentials: Credential[]) {
   });
 
   drawFooter(doc);
-  doc.save(`notecore-credentials-${new Date().toISOString().slice(0, 10)}.pdf`);
+  const blob = doc.output('blob');
+  await exportBlob(`notecore-credentials-${new Date().toISOString().slice(0, 10)}.pdf`, blob);
 }
 

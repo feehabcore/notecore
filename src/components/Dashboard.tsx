@@ -5,6 +5,7 @@ import { Screen } from '../types';
 import { useAppStore } from '../store';
 import { daysBetween, formatRelativeTime, nowIso } from '../utils/time';
 import { noteLooksLikeCredential } from '../utils/sensitive';
+import { toPlainText } from '../utils/plainText';
 
 interface DashboardProps {
   onNavigate: (screen: Screen) => void;
@@ -110,7 +111,7 @@ export default function Dashboard({ onNavigate, onCreateNote, onOpenNote }: Dash
             <ActivityCard
               icon={<FileText size={20} />}
               title={recentNotes[0].title}
-              description={recentNotes[0].content || '—'}
+              description={toPlainText(recentNotes[0].content || '') || '—'}
               type="encrypted"
               time={formatRelativeTime(recentNotes[0].updatedAt, now)}
               onClick={() => onOpenNote(recentNotes[0].id)}
@@ -130,7 +131,7 @@ export default function Dashboard({ onNavigate, onCreateNote, onOpenNote }: Dash
             <ActivityCard
               icon={<FileText size={20} />}
               title={recentNotes[1].title}
-              description={recentNotes[1].content || '—'}
+              description={toPlainText(recentNotes[1].content || '') || '—'}
               type="encrypted"
               time={formatRelativeTime(recentNotes[1].updatedAt, now)}
               onClick={() => onOpenNote(recentNotes[1].id)}
