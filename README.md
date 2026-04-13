@@ -4,6 +4,11 @@ Local-first **secure notes + credential vault** built with React + Vite + Tailwi
 
 Notecore is a secure, open-source offline notepad app that lets you store important information such as government IDs, social media accounts, gmail accounts, and personal credentials directly on your device.
 
+## Download APK
+
+- **Latest APK (direct):** [Download notecore-latest-debug.apk](https://github.com/feehabcore/notecore/releases/latest/download/notecore-latest-debug.apk)
+- **All release assets:** [GitHub Releases](https://github.com/feehabcore/notecore/releases)
+
 ## What this app does
 
 - **Notes**: create, edit, delete, and search notes (stored in your browser).
@@ -67,6 +72,10 @@ Use the release workflow `.github/workflows/android-release-apk.yml`:
 3. Enter tag (example: `v1.0.0`)
 4. After success, open **Releases** in your repo
 5. Download `notecore-v1.0.0-debug.apk` directly
+
+After each release workflow run, this stable link is updated automatically:
+
+- [Latest direct APK link](https://github.com/feehabcore/notecore/releases/latest/download/notecore-latest-debug.apk)
 
 ## Google Play (later)
 

@@ -51,6 +51,7 @@ jobs:
       - name: Rename APK
         run: |
           cp android/app/build/outputs/apk/debug/app-debug.apk "notecore-${{ github.event.inputs.tag }}-debug.apk"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "notecore-latest-debug.apk"
         shell: bash
 
       - name: Create GitHub release
@@ -63,10 +64,12 @@ jobs:
 
             Install steps:
             1. Download `notecore-${{ github.event.inputs.tag }}-debug.apk`
+            2. Or use stable asset name: `notecore-latest-debug.apk`
             2. Open on Android
             3. Allow "Install unknown apps" if prompted
           files: |
             notecore-${{ github.event.inputs.tag }}-debug.apk
+            notecore-latest-debug.apk
           fail_on_unmatched_files: true
           make_latest: true
         env:
@@ -76,6 +79,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: notecore-${{ github.event.inputs.tag }}-debug-apk
-          path: notecore-${{ github.event.inputs.tag }}-debug.apk
+          path: |
+            notecore-${{ github.event.inputs.tag }}-debug.apk
+            notecore-latest-debug.apk
           if-no-files-found: error
 
