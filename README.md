@@ -2,6 +2,8 @@
 
 Local-first **secure notes + credential vault** built with React + Vite + Tailwind + Capacitor (Android-ready).
 
+Notecore is a secure, open-source offline notepad app that lets you store important information such as government IDs, social media accounts, gmail accounts, and personal credentials directly on your device.
+
 ## What this app does
 
 - **Notes**: create, edit, delete, and search notes (stored in your browser).
