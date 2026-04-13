@@ -58,6 +58,16 @@ After pushing to GitHub:
 - Download artifact: `notecore-debug-apk`
 - Install `app-debug.apk` on Android for trial/testing
 
+### 4) Easy install from Releases (recommended)
+
+Use the release workflow `.github/workflows/android-release-apk.yml`:
+
+1. Open **Actions > Build And Release Android APK**
+2. Click **Run workflow**
+3. Enter tag (example: `v1.0.0`)
+4. After success, open **Releases** in your repo
+5. Download `notecore-v1.0.0-debug.apk` directly
+
 ## Google Play (later)
 
 For Play Store release, generate a **signed release AAB** from Android Studio:

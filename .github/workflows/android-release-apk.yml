@@ -1,0 +1,81 @@
+name: Build And Release Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (example: v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  release-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Ensure Gradle wrapper executable
+        run: chmod +x android/gradlew
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew --no-daemon assembleDebug
+
+      - name: Rename APK
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk "notecore-${{ github.event.inputs.tag }}-debug.apk"
+        shell: bash
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag }}
+          name: Notecore ${{ github.event.inputs.tag }}
+          body: |
+            Android APK build for Notecore.
+
+            Install steps:
+            1. Download `notecore-${{ github.event.inputs.tag }}-debug.apk`
+            2. Open on Android
+            3. Allow "Install unknown apps" if prompted
+          files: |
+            notecore-${{ github.event.inputs.tag }}-debug.apk
+          fail_on_unmatched_files: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload renamed APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notecore-${{ github.event.inputs.tag }}-debug-apk
+          path: notecore-${{ github.event.inputs.tag }}-debug.apk
+          if-no-files-found: error
+
